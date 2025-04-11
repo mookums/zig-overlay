@@ -21,39 +21,42 @@
     version,
     sha256,
   }:
-    pkgs.stdenv.mkDerivation (finalAttrs: {
-      inherit version;
+    assert file == null -> url != null;
+      pkgs.stdenv.mkDerivation (finalAttrs: {
+        inherit version;
 
-      pname = "zig";
-      src = pkgs.fetchurl {
-        inherit sha256;
-        urls =
-          if file != null
-          then (urlsForFile file)
-          else [url];
-      };
-      dontConfigure = true;
-      dontBuild = true;
-      dontFixup = true;
-      installPhase = ''
-        mkdir -p $out/{doc,bin,lib}
-        [ -d docs ] && cp -r docs/* $out/doc
-        [ -d doc ] && cp -r doc/* $out/doc
-        cp -r lib/* $out/lib
-        cp zig $out/bin/zig
-      '';
+        pname = "zig";
+        src = pkgs.fetchurl {
+          inherit sha256;
+          urls = urlsForFile (
+            if file != null
+            then file
+            # Backwards compatibility with old sources.json
+            else (pkgs.lib.removePrefix "https://ziglang.org/builds/" url)
+          );
+        };
+        dontConfigure = true;
+        dontBuild = true;
+        dontFixup = true;
+        installPhase = ''
+          mkdir -p $out/{doc,bin,lib}
+          [ -d docs ] && cp -r docs/* $out/doc
+          [ -d doc ] && cp -r doc/* $out/doc
+          cp -r lib/* $out/lib
+          cp zig $out/bin/zig
+        '';
 
-      passthru.hook = pkgs.zig.hook.override {zig = finalAttrs.finalPackage;};
+        passthru.hook = pkgs.zig.hook.override {zig = finalAttrs.finalPackage;};
 
-      meta = with pkgs.lib; {
-        description = "General-purpose programming language and toolchain for maintaining robust, optimal, and reusable software";
-        homepage = "https://ziglang.org/";
-        license = licenses.mit;
-        maintainers = [];
-        platforms = platforms.unix;
-        inherit broken;
-      };
-    });
+        meta = with pkgs.lib; {
+          description = "General-purpose programming language and toolchain for maintaining robust, optimal, and reusable software";
+          homepage = "https://ziglang.org/";
+          license = licenses.mit;
+          maintainers = [];
+          platforms = platforms.unix;
+          inherit broken;
+        };
+      });
 
   # The packages that are tagged releases
   taggedPackages =
