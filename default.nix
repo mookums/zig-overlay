@@ -17,6 +17,7 @@
   mkBinaryInstall = {
     file ? null,
     url ? null,
+    broken ? false,
     version,
     sha256,
   }:
@@ -50,6 +51,7 @@
         license = licenses.mit;
         maintainers = [];
         platforms = platforms.unix;
+        inherit broken;
       };
     });
 
