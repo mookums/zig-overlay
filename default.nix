@@ -32,9 +32,9 @@
       meta = with pkgs.lib; {
         description = "General-purpose programming language and toolchain for maintaining robust, optimal, and reusable software";
         homepage = "https://ziglang.org/";
-        license = lib.licenses.mit;
+        license = licenses.mit;
         maintainers = [];
-        platforms = lib.platforms.unix;
+        platforms = platforms.unix;
       };
     });
 
