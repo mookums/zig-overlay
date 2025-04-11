@@ -3,11 +3,20 @@
   system ? builtins.currentSystem,
 }: let
   inherit (pkgs) lib;
-  sources = builtins.fromJSON (lib.strings.fileContents ./sources.json);
+  sources = lib.importJSON ./sources.json;
+
+  urlsForFile = file: let
+    # This is a list of known Zig nightly mirrors used by https://github.com/mlugg/setup-zig.
+    # File hashes are exactly the same so `fetchurl` can try them in order.
+    mirrors = lib.importJSON ./mirrors.json;
+  in
+    [("https://ziglang.org/builds/" + file)]
+    ++ map (mirror: (builtins.elemAt mirror 0) + "/" + file) mirrors;
 
   # mkBinaryInstall makes a derivation that installs Zig from a binary.
   mkBinaryInstall = {
-    url,
+    file ? null,
+    url ? null,
     version,
     sha256,
   }:
@@ -15,7 +24,13 @@
       inherit version;
 
       pname = "zig";
-      src = pkgs.fetchurl {inherit url sha256;};
+      src = pkgs.fetchurl {
+        inherit sha256;
+        urls =
+          if file != null
+          then (urlsForFile file)
+          else [url];
+      };
       dontConfigure = true;
       dontBuild = true;
       dontFixup = true;
@@ -41,7 +56,7 @@
   # The packages that are tagged releases
   taggedPackages =
     lib.attrsets.mapAttrs
-    (k: v: mkBinaryInstall {inherit (v.${system}) version url sha256;})
+    (k: v: mkBinaryInstall v.${system})
     (lib.attrsets.filterAttrs
       (k: v:
         (builtins.hasAttr system v)
@@ -60,7 +75,7 @@
           then "master"
           else ("master-" + k)
         )
-        (mkBinaryInstall {inherit (v.${system}) version url sha256;})
+        (mkBinaryInstall v.${system})
     )
     (lib.attrsets.filterAttrs
       (k: v: (builtins.hasAttr system v) && (v.${system}.url != null))
@@ -70,7 +85,7 @@
   # https://machengine.org/docs/nominated-zig/
   machPackages =
     lib.attrsets.mapAttrs
-    (k: v: mkBinaryInstall {inherit (v.${system}) version url sha256;})
+    (k: v: mkBinaryInstall v.${system})
     (lib.attrsets.filterAttrs (k: v: lib.strings.hasSuffix "mach" k)
       (builtins.removeAttrs sources ["master"]));
 
