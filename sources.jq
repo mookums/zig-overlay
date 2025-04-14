@@ -21,7 +21,7 @@ reduce to_entries[] as $entry ({}; . * (
   $entry | {
     (.key): (
       if (.key != "master" and .key != "mach-latest") then
-        toentry(.key; .value)
+        toentry(.value.version // .key; .value)
       else {
         "latest": toentry(.value.version; .value),
         (.value.date): toentry(.value.version; .value),
