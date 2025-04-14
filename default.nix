@@ -83,7 +83,10 @@
         (mkBinaryInstall v.${system})
     )
     (lib.attrsets.filterAttrs
-      (k: v: (builtins.hasAttr system v) && (v.${system}.url != null))
+      (k: v:
+        (builtins.hasAttr system v)
+        && (builtins.hasAttr "url" v.${system})
+        && (v.${system}.url != null))
       sources.master);
 
   # Mach nominated versions
