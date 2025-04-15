@@ -1,3 +1,9 @@
+# This is a fork of [zig-overlay](https://github.com/mitchellh/zig-overlay) with some differences
+
+- [Mach nominated versions](https://machengine.org/docs/nominated-zig/)
+- Mirrors for old nightly builds
+- Tracking nixpkgs-unstable
+
 # Nix Flake for Zig
 
 This repository is a Nix flake packaging the [Zig](https://ziglang.org)
@@ -26,7 +32,7 @@ In your `flake.nix` file:
 
 ```nix
 {
-  inputs.zig.url = "github:mitchellh/zig-overlay";
+  inputs.zig.url = "github:bandithedoge/zig-overlay";
 
   outputs = { self, zig, ... }: {
     ...
@@ -38,13 +44,13 @@ In a shell:
 
 ```sh
 # run the latest released version
-$ nix run 'github:mitchellh/zig-overlay'
+$ nix run 'github:bandithedoge/zig-overlay'
 # open a shell with nightly version dated 2021-02-13 (oldest version available)
-$ nix shell 'github:mitchellh/zig-overlay#master-2021-02-13'
+$ nix shell 'github:bandithedoge/zig-overlay#master-2021-02-13'
 # open a shell with latest nightly version
-$ nix shell 'github:mitchellh/zig-overlay#master'
+$ nix shell 'github:bandithedoge/zig-overlay#master'
 # open a shell with latest Mach nominated version
-$ nix shell 'github:mitchellh/zig-overlay#mach-latest'
+$ nix shell 'github:bandithedoge/zig-overlay#mach-latest'
 ```
 
 ### Compiler Development
@@ -58,7 +64,7 @@ here are the easy steps to setup a working development environment:
 $ git clone https://github.com/ziglang/zig.git
 $ cd zig
 # setup the template
-$ nix flake init -t 'github:mitchellh/zig-overlay#compiler-dev'
+$ nix flake init -t 'github:bandithedoge/zig-overlay#compiler-dev'
 # Two options:
 # (1) start a shell, this forces bash
 $ nix develop
