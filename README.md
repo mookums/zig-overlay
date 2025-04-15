@@ -51,6 +51,10 @@ $ nix shell 'github:bandithedoge/zig-overlay#master-2021-02-13'
 $ nix shell 'github:bandithedoge/zig-overlay#master'
 # open a shell with latest Mach nominated version
 $ nix shell 'github:bandithedoge/zig-overlay#mach-latest'
+# open a shell with latest ZLS
+$ nix shell 'github:bandithedoge/zig-overlay#zls-latest'
+# open a shell with ZLS for a specific Zig version
+$ nix shell 'github:bandithedoge/zig-overlay#master.zls'
 ```
 
 ### Compiler Development

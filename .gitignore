@@ -2,8 +2,9 @@ index.json
 zig-index.json
 zig-index.json.minisig
 mach-index.json
-sources.old.json
-sources.new.json
+*.old.json
+*.new.json
+temp.json
 
 .direnv
 result

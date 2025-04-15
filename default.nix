@@ -5,6 +5,11 @@
   inherit (pkgs) lib;
   sources = lib.importJSON ./sources.json;
 
+  zigSystem =
+    if lib.hasSuffix system "darwin"
+    then (lib.removeSuffix "darwin") + "macos"
+    else system;
+
   urlsForFile = file: let
     # This is a list of known Zig nightly mirrors used by https://github.com/mlugg/setup-zig.
     # File hashes are exactly the same so `fetchurl` can try them in order.
@@ -23,21 +28,23 @@
   }:
     assert file == null -> url != null;
       pkgs.stdenv.mkDerivation (finalAttrs: {
+        pname = "zig";
         inherit version;
 
-        pname = "zig";
         src = pkgs.fetchurl {
           inherit sha256;
           urls = urlsForFile (
             if file != null
             then file
             # Backwards compatibility with old sources.json
-            else (pkgs.lib.removePrefix "https://ziglang.org/builds/" url)
+            else (lib.removePrefix "https://ziglang.org/builds/" url)
           );
         };
+
         dontConfigure = true;
         dontBuild = true;
         dontFixup = true;
+
         installPhase = ''
           mkdir -p $out/{doc,bin,lib}
           [ -d docs ] && cp -r docs/* $out/doc
@@ -46,9 +53,19 @@
           cp zig $out/bin/zig
         '';
 
-        passthru.hook = pkgs.zig.hook.override {zig = finalAttrs.finalPackage;};
+        passthru = {
+          hook = pkgs.zig.hook.override {zig = finalAttrs.finalPackage;};
+          zls = let
+            versionMap = lib.importJSON ./zls-versions.json;
+            zlsVersion =
+              if (builtins.hasAttr version versionMap)
+              then versionMap.${version}.version
+              else throw "";
+          in
+            zlsPackages.${"zls-" + zlsVersion};
+        };
 
-        meta = with pkgs.lib; {
+        meta = with lib; {
           description = "General-purpose programming language and toolchain for maintaining robust, optimal, and reusable software";
           homepage = "https://ziglang.org/";
           license = licenses.mit;
@@ -110,13 +127,56 @@
     (x: y: (builtins.compareVersions x y) < 0)
     (builtins.attrNames machPackages)
   );
+
+  mkBinaryZls = {
+    url,
+    sha256,
+    version,
+  }:
+    pkgs.stdenv.mkDerivation {
+      pname = "zls";
+      inherit version;
+
+      src = pkgs.fetchurl {inherit url sha256;};
+      sourceRoot = ".";
+
+      dontConfigure = true;
+      dontBuild = true;
+      dontFixup = true;
+
+      installPhase = ''
+        mkdir -p $out/bin
+        cp zls $out/bin
+      '';
+    };
+
+  zlsPackages = let
+    sources = lib.importJSON ./zls-sources.json;
+  in
+    lib.mapAttrs' (n: v:
+      lib.nameValuePair
+      ("zls-" + n)
+      (mkBinaryZls {
+        inherit (v) version;
+        url = v.${zigSystem}.tarball;
+        sha256 = v.${zigSystem}.shasum;
+      }))
+    sources;
+
+  zlsLatest = lib.lists.last (
+    builtins.sort
+    (x: y: (builtins.compareVersions x y) < 0)
+    (builtins.attrNames zlsPackages)
+  );
 in
   # We want the packages but also add a "default" that just points to the
   # latest released version.
   taggedPackages
   // masterPackages
   // machPackages
+  // zlsPackages
   // {
     "default" = taggedPackages.${latest};
     mach-latest = machPackages.${machLatest};
+    zls-latest = zlsPackages.${zlsLatest};
   }
