@@ -5,11 +5,6 @@
   inherit (pkgs) lib;
   sources = lib.importJSON ./sources.json;
 
-  zigSystem =
-    if lib.hasSuffix system "darwin"
-    then (lib.removeSuffix "darwin") + "macos"
-    else system;
-
   urlsForFile = file: let
     # This is a list of known Zig nightly mirrors used by https://github.com/mlugg/setup-zig.
     # File hashes are exactly the same so `fetchurl` can try them in order.
@@ -95,7 +90,7 @@
         (
           if k == "latest"
           then "master"
-          else ("master-" + k)
+          else v.${system}.version
         )
         (mkBinaryInstall v.${system})
     )
@@ -152,6 +147,10 @@
 
   zlsPackages = let
     sources = lib.importJSON ./zls-sources.json;
+    zigSystem =
+      if lib.hasSuffix system "darwin"
+      then (lib.removeSuffix "darwin") + "macos"
+      else system;
   in
     lib.mapAttrs' (n: v:
       lib.nameValuePair
@@ -166,17 +165,27 @@
   zlsLatest = lib.lists.last (
     builtins.sort
     (x: y: (builtins.compareVersions x y) < 0)
+    (builtins.filter (v: !lib.hasInfix "dev" v) (builtins.attrNames zlsPackages))
+  );
+
+  zlsMaster = lib.lists.last (
+    builtins.sort
+    (x: y: (builtins.compareVersions x y) < 0)
     (builtins.attrNames zlsPackages)
   );
 in
   # We want the packages but also add a "default" that just points to the
   # latest released version.
-  taggedPackages
-  // masterPackages
-  // machPackages
-  // zlsPackages
-  // {
-    "default" = taggedPackages.${latest};
-    mach-latest = machPackages.${machLatest};
-    zls-latest = zlsPackages.${zlsLatest};
-  }
+  lib.mapAttrs' (k: v: lib.nameValuePair (lib.replaceStrings ["." "+"] ["_" "_"] k) v)
+  (
+    taggedPackages
+    // masterPackages
+    // machPackages
+    // zlsPackages
+    // {
+      "default" = taggedPackages.${latest};
+      mach-latest = machPackages.${machLatest};
+      zls-latest = zlsPackages.${zlsLatest};
+      zls-master = zlsPackages.${zlsMaster};
+    }
+  )
