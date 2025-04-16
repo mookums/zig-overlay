@@ -5,6 +5,9 @@
   inherit (pkgs) lib;
   sources = builtins.fromJSON (lib.strings.fileContents ./sources.json);
 
+  isSemver = key: builtins.match "^[0-9]+\\.[0-9]+\\.[0-9]+$" key != null;
+  semverSources = lib.attrsets.filterAttrs (k: v: isSemver k) sources;
+
   # mkBinaryInstall makes a derivation that installs Zig from a binary.
   mkBinaryInstall = {
     url,
@@ -34,7 +37,7 @@
     (k: v: mkBinaryInstall {inherit (v.${system}) version url sha256;})
     (lib.attrsets.filterAttrs
       (k: v: (builtins.hasAttr system v) && (v.${system}.url != null) && (v.${system}.sha256 != null))
-      (builtins.removeAttrs sources ["master"]));
+      semverSources);
 
   # The master packages
   masterPackages =
